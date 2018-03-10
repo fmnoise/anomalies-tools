@@ -1,6 +1,6 @@
-# anomalies [![Build Status](https://travis-ci.org/dawcs/anomalies-tools.svg?branch=master)](https://travis-ci.org/dawcs/anomalies-tools)
+# anomalies-tools [![Build Status](https://travis-ci.org/dawcs/anomalies-tools.svg?branch=master)](https://travis-ci.org/dawcs/anomalies-tools)
 
-Functional programming tools for https://github.com/cognitect-labs/anomalies
+Utility functions and macros for https://github.com/cognitect-labs/anomalies
 
 Library is currenty in alpha, so anything may be changed in future versions.
 
