@@ -20,6 +20,7 @@ Maven dependency information:
 </dependency>
 ```
 
+Let's write a function which will return anomaly in case of `deref` timeout:
 ```clojure
 (require '[anomalies-tools.core :as at :refer [!!]])
 (require '[cognitect.anomalies :as a])
@@ -115,7 +116,7 @@ How about functional programming?
 (inc (!!)) ;; BOOOM!!! Unhandled java.lang.ClassCastException clojure.lang.PersistentArrayMap cannot be cast to java.lang.Number
 ```
 
-How to make function aware of anomalies? `aware` to the rescue!
+How to make function aware of anomalies? `aware` to the rescue:
 ```clojure
 (def ainc (at/aware inc))
 (ainc 1) ;; => 2
@@ -130,7 +131,7 @@ How to make function aware of anomalies? `aware` to the rescue!
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
 ```
 
-Do you like `some->` and `some->>` power for dealing with nil values? There's analogs for anomalies!
+Do you like `some->` and `some->>` power for dealing with nil values? There's analogs for anomalies:
 ```clojure
 (at/aware-> 1 inc) ;; => 2
 (at/aware-> (!!) inc) ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
@@ -172,7 +173,7 @@ If some function in chaing returns another anomaly, it's passed to next function
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/busy, :data #:cognitect.anomalies{:category :cognitect.anomalies/conflict, :message "Uh-oh"}}
 ```
 
-`caught` and `chain` accepts value as first argument so can be used together in `->` macro
+`caught` and `chain` accepts value as first argument so can be used together in `->` macro:
 ```clojure
 (-> "hello"
      at/anomaly
