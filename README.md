@@ -164,7 +164,7 @@ For non-anomaly value, chain in completely skipped and given value is returned i
 (at/caught 1 (comp prn ::a/message)) ;; => 1
 ```
 
-If some function in chaing returns another anomaly, it's passed to next function in chain:
+If some function in chain returns another anomaly, it's passed to next function in chain:
 ```clojure
 (at/caught
   (at/conflict "Uh-oh")
@@ -173,7 +173,7 @@ If some function in chaing returns another anomaly, it's passed to next function
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/busy, :data #:cognitect.anomalies{:category :cognitect.anomalies/conflict, :message "Uh-oh"}}
 ```
 
-`caught` and `chain` accepts value as first argument so can be used together in `->` macro:
+`caught` and `chain` accept value as first argument so can be used together in `->` macro:
 ```clojure
 (-> "hello"
      at/anomaly
@@ -189,13 +189,13 @@ Returning to imperative error handling example, we can rewrite it using function
     (at/caught say-oooops))
 ```
 
-Often we need to fallback to default value. `either` can help:
+Often we need to fallback to some default value. `either` can help in this case:
 ```clojure
 (at/either (!!) 1) ;; => 1
 (apply at/either [(at/busy) (at/fault) (at/conflict) (at/not-found) 1]) ;; => 1
 ```
 
-If only anomaly values given to `either`, it returns last given value:
+If only anomaly values are given to `either`, then last given value is returned:
 ```clojure
 (at/either (at/busy) (at/unsupported))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/unsupported}
@@ -209,6 +209,31 @@ So `either` is good companion for `chain` and `caught` in `->` macro:
     (at/caught prn)
     (at/either "goodbye"))
 ;; => "goodbye"
+```
+
+By supporting multiple args, `either` can be also used on his own similarly to `or`:
+```clojure
+(defn load-from-db [id]
+  (if (= id 1)
+    {:role "user"}
+    (at/not-found)))
+
+(defn load-from-cache [id]
+  (if (= id 2)
+    {:role "admin"}
+    (at/not-found)))
+
+(def default-settings {:role "guest"})
+
+(defn user-settings [id]
+  (at/either
+    (load-from-cache id)
+    (load-from-db id)
+    default-settings))
+
+(user-settings 1) ;; => {:role "user"}
+(user-settings 2) ;; => {:role "admin"}
+(user-settings 3) ;; => {:role "guest"}
 ```
 
 `alet` is anomalies aware version of `let` macro:
