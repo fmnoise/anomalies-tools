@@ -34,67 +34,104 @@ Maven dependency information:
 (get-value-with-fake-connection "hello" 1 100) ;; => "hello"
 (get-value-with-fake-connection "hello" 100 1)
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/busy, :message "Connection timeout"}
+```
 
-;; is map syntax too verbose?
+Plain map syntax may look too verbose for someone, so there's handy construction helper:
+```clojure
 (at/anomaly ::a/busy "Connection timeout")
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/busy, :message "Connection timeout"}
+```
 
-;; still too much typing? there's short form
+And a short form alias for true 1-liner lovers:
+```clojure
 (!! ::a/busy "Connection timeout")
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/busy, :message "Connection timeout"}
+```
 
-;; want even more succinct form?
+There are also constructors for each category:
+```clojure
 (at/busy "Connection timeout")
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/busy, :message "Connection timeout"}
+(at/not-found)
+;; => #:cognitect.anomalies{:category :cognitect.anomalies/not-found}
+(at/forbidden {:user-id 123})
+;; => #:cognitect.anomalies{:category :cognitect.anomalies/forbidden :data {:user-id 123}}
+```
 
+Construction helper functions are very flexible regarding arguments:
+```clojure
 ;; no need for message?
 (at/busy)
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/busy}
 
-;; happy with one category to cover them all? :fault is default one
-(!!)
-;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
-
 ;; need to store some additional data along with message?
 (!! ::a/forbidden "Cannot perform operation" {:user-id 2128506})
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/forbidden, :message "Cannot perform operation", :data {:user-id 2128506}}
+
+;; just data is enough?
+(!! ::a/forbidden {:user-id 2128506})
+;; => #:cognitect.anomalies{:category :cognitect.anomalies/forbidden, :data {:user-id 2128506}}
+```
+
+Default category is `:cognitect.anomalies/fault` (later we'll see how to change that)
+```clojure
+;; the smallest possible anomaly constructor
+(!!)
+;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
+
 (!! "Cannot perform operation" {:user-id 2128506})
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault, :message "Cannot perform operation", :data {:user-id 2128506}}
 
-;; prefer just data instead of message?
-(!! ::a/forbidden {:user-id 2128506})
-;; => #:cognitect.anomalies{:category :cognitect.anomalies/forbidden, :data {:user-id 2128506}}
 (!! {:user-id 2128506})
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault, :data {:user-id 2128506}}
+```
 
-;; so what we can do with anomaly?
-;; first, we can check if value is anomaly
+If we want other default category, wrapping code into `with-default-category` macro does the trick:
+```clojure
+(at/with-default-category
+ ::a/conflict
+ (!! "Something went wrong"))
+;; => #:cognitect.anomalies{:category :cognitect.anomalies/conflict, :message "Something went wrong"}
+```
+
+So, how we can handle anomalies? First, we can check if value is anomaly with `anomaly?` function:
+```clojure
 (at/anomaly? (!!)) ;; => true
 (at/anomaly? {:user 1}) ;; => false
 (at/anomaly? (Exception. "Bad stuff")) ;; => false
+```
 
-;; do you prefer imperative error checking?
+This can be useful for imperative style error checking:
+```clojure
 (let [result (do-stuff)]
   (if (at/anomaly? result)
     (say-oooops result)
     (say-hooray result)))
+```
 
-;; that's fine but also there are much better functional tools
-;; let's start from functions
+How about functional programming?
+```cljoure
 (inc 1) ;; => 2
 (inc (!!)) ;; BOOOM!!! Unhandled java.lang.ClassCastException clojure.lang.PersistentArrayMap cannot be cast to java.lang.Number
+```
 
-;; let's make it aware of anomalies
+How to make function aware of anomalies? `aware` to the rescue!
+```clojure
 (def ainc (at/aware inc))
 (ainc 1) ;; => 2
 (ainc (!!)) ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
+```
 
-;; `aware` accepts function as first argument which makes it perfect for `->>` macro
-(->> 1 (at/aware inc) (at/aware str)) ;; "2"
+`aware` accepts function as first argument which makes it perfect for `->>` macro
+```clojure
+(->> 1 (at/aware inc) (at/aware str))
+;; => "2"
 (->> (!!) (at/aware inc) (at/aware str))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
+```
 
-;; anomalies aware chain can be also done using macros similar to `some->` and `some->>`
+Do you like `some->` and `some->>` power for dealing with nil values? There's analogs for anomalies!
+```clojure
 (at/aware-> 1 inc) ;; => 2
 (at/aware-> (!!) inc) ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
 (at/aware-> 1 (!!) inc) ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault, :data 1}
@@ -103,79 +140,113 @@ Maven dependency information:
 (at/aware->> (!!) (map inc))   ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
 (at/aware->> [1 2 3] (!! ::a/conflict "Ooops") (map inc))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/conflict, :message "Ooops", :data [1 2 3]}
+```
 
-;; there's also functional version of `chain` if macros magic is not desired
+When functional chains are required, but macros magic is not desired, `chain` function may fit the needs:
+```clojure
 (at/chain [1 2 3] (partial map inc)) ;; => (2 3 4)
 (at/chain [1 2 3] (partial at/unsupported) (partial map inc))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/unsupported, :data [1 2 3]}
+```
 
-;; `caught` can help in the case if we want to handle anomaly somehow and then return it
-;; the following code prints anomaly message and category and returns given anomaly
+And of course there's opposite case, when we need to handle caught anomaly. `caught` does the job and makes sure that anomaly is returned from chain:
+```clojure
 (at/caught
   (at/forbidden "Bad password" {:user-id 2128506})
-  (comp prn ::a/message)
+  (comp prn ::a/message) ;; prn returns nil, so initial anomaly is passed to next function in chain
   (comp prn ::a/category))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/forbidden, :message "Bad password", :data {:user-id 2128506}}
+```
 
-;; if given value is not anomaly, then chain is skipped and this value is returned
+For non-anomaly value, chain in completely skipped and given value is returned immediately:
+```clojure
 (at/caught 1 (comp prn ::a/message)) ;; => 1
+```
 
-;; if some chain function returns another anomaly, it's passed to next function in chain
+If some function in chaing returns another anomaly, it's passed to next function in chain:
+```clojure
 (at/caught
   (at/conflict "Uh-oh")
   (fn [x] (at/busy x)) ;; producing new anomaly from given one
   (comp prn at/category)) ;; prints :busy
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/busy, :data #:cognitect.anomalies{:category :cognitect.anomalies/conflict, :message "Uh-oh"}}
+```
 
-;; `caught` and `chain` accepts value as first argument so can be used together in `->` macro
+`caught` and `chain` accepts value as first argument so can be used together in `->` macro
+```clojure
 (-> "hello"
      at/anomaly
      (at/chain clojure.string/upper-case)
      (at/caught (comp prn at/message))) ;; prints anomaly message to console
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault, :message "hello"}
+```
 
-;; returning to imperative error handling example, we can rewrite it using functional chain
+Returning to imperative error handling example, we can rewrite it using functional chain:
+```clojure
 (-> (do-stuff)
     (at/chain say-hooray)
     (at/caught say-oooops))
+```
 
-;; what about fallback to default?
-;; `either` allows to choose among anomaly and some default non-anomaly value
+Often we need to fallback to default value. `either` can help:
+```clojure
 (at/either (!!) 1) ;; => 1
 (apply at/either [(at/busy) (at/fault) (at/conflict) (at/not-found) 1]) ;; => 1
+```
 
-;; if only anomaly values given, `either` returns last given value
+If only anomaly values given to `either`, it returns last given value:
+```clojure
 (at/either (at/busy) (at/unsupported))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/unsupported}
+```
 
-;; and it's also very useful in `->` marco chain
+So `either` is good companion for `chain` and `caught` in `->` macro:
+```clojure
 (-> "hello"
     at/anomaly
     (at/chain clojure.string/upper-case)
-    (at/caught prn) ;; prints anomaly to console
+    (at/caught prn)
     (at/either "goodbye"))
 ;; => "goodbye"
+```
 
-;; `alet` is anomalies aware version of `let` macro
+`alet` is anomalies aware version of `let` macro:
+```clojure
 (at/alet [a 1 b 2] (+ a b)) ;; => 3
 (at/alet [a 1 b (!!)] (+ a b))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
+```
 
-;; and sometimes you need to deal with Java exceptions
+`alet` calculates bindings until anomaly is returned. In the following example exception is not thrown:
+```clojure
+(at/alet [a 1 b (!!) c (throw (Exception.))] (+ a b))
+;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
+```
+
+Sometimes we need to deal with Java exceptions. We can turn all caught exception into anomaly with `catch-all` macro:
+```clojure
 (at/catch-all (/ 1 0))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault, :message "Divide by zero", :data #error {...}
+```
 
-;; need to throw some exceptions and catch other ones?
+If we need to throw some exceptions and catch all others, `catch-except` fits for that purpose:
+```clojure
 (at/catch-except #{NullPointerException} (/ 1 0))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault, :message "Divide by zero", :data #error {...}
 (at/catch-except #{NullPointerException} (/ 1 nil)) ;; throws java.lang.NullPointerException
+```
 
-;; catching only certain exceptions required?
+Need to catch only certain exceptions and throw all others? `catch-only` does the job:
+```clojure
 (at/catch-only #{NullPointerException} (/ 1 0)) ;; throws java.lang.ArithmeticException
 (at/catch-only #{NullPointerException} (/ 1 nil))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault, :data #error {...}
+```
+**WARNING!** at the moment, exceptions hierarchy doesn't affect processing, e.g. specifying Throwable will not catch any of it's descendants.
 
-;; and full control for setting category, message and data of produced anomaly is also possible
+By default caught anomalies will be filled with default `:category`, `:message` extracted from exception and `:data` containing caught exception instance.
+`catch-anomaly` macro gives full control for all that options along with list of exceptions to catch or throw:
+```clojure
 (at/catch-anomaly
  {:category ::a/conflict
   :message "Uh-oh"
@@ -193,14 +264,14 @@ Maven dependency information:
  {:except #{ArithmeticException}}
  (/ 1 0)) ;; throws java.lang.ArithmeticException
 
-;; WARNING! at the moment, exceptions hierarchy doesn't affect processing, e.g. specifying Throwable doesn't will not catch any of it's descendants
-
 (at/with-default-category
   ::a/conflict
   (at/catch-all (/ 1 0)))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/conflict, :message "Divide by zero", :data #error {...}
+```
 
-;; need to assign some category for certain class of exceptions? that's also possible
+Need to assign some category for certain class of exceptions? That's also possible with `with-exception-categories` macro:
+```clojure
 (at/with-exception-categories
   {NullPointerException ::a/unsupported}
   (at/catch-all (+ 1 nil)))
@@ -209,7 +280,6 @@ Maven dependency information:
 
 ## TODO
 
-- Make documentation more readable
 - ClojureScript support
 
 ## License
