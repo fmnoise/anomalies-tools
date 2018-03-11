@@ -131,7 +131,7 @@ How to make function aware of anomalies? `aware` to the rescue:
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
 ```
 
-Do you like `some->` and `some->>` power for dealing with nil values? There's analogs for anomalies:
+Do you like `some->` and `some->>` power for dealing with `nil` values? There's analogs for anomalies:
 ```clojure
 (at/aware-> 1 inc) ;; => 2
 (at/aware-> (!!) inc) ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
@@ -220,7 +220,10 @@ So `either` is good companion for `chain` and `caught` in `->` macro:
 
 `alet` calculates bindings until anomaly is returned. In the following example exception is not thrown:
 ```clojure
-(at/alet [a 1 b (!!) c (throw (Exception.))] (+ a b))
+(at/alet [a 1
+          b (!!)
+          c (throw (Exception.))]
+  (+ a b))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
 ```
 
