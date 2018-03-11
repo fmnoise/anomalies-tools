@@ -211,7 +211,7 @@ So `either` is good companion for `chain` and `caught` in `->` macro:
 ;; => "goodbye"
 ```
 
-By supporting multiple args, `either` can be also used on his own similarly to `or`:
+By supporting multiple args, `either` can be also used on its own similarly to `or`:
 ```clojure
 (defn load-from-db [id]
   (if (= id 1)
