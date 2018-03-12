@@ -252,7 +252,7 @@ By supporting multiple args, `either` can be also used on its own similarly to `
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
 ```
 
-Sometimes we need to deal with Java exceptions. We can turn all caught exception into anomaly with `catch-all` macro:
+Sometimes we need to deal with Java exceptions. We can turn any caught exception into anomaly with `catch-all` macro:
 ```clojure
 (at/catch-all (/ 1 0))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault, :message "Divide by zero", :data #error {...}
@@ -271,10 +271,9 @@ Need to catch only certain exceptions and throw all others? `catch-only` does th
 (at/catch-only #{NullPointerException} (/ 1 nil))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault, :data #error {...}
 ```
-**WARNING!** at the moment, exceptions hierarchy doesn't affect processing, e.g. specifying Throwable will not catch any of it's descendants.
+**WARNING!** at the moment, exceptions hierarchy doesn't affect processing, e.g. specifying Throwable will catch only Throwable but none of it's descendants. Currently that reflects library author's vision, but things may change in future.
 
-By default caught anomalies will be filled with default `:category`, `:message` extracted from exception and `:data` containing caught exception instance.
-`catch-anomaly` macro gives full control for all that options along with list of exceptions to catch or throw:
+By default caught anomalies will be filled with default `:category`, `:message` extracted from exception and `:data` containing caught exception instance. We may want another behavior so `catch-anomaly` macro gives us full control for all that options along with list of exceptions to catch or throw:
 ```clojure
 (at/catch-anomaly
  {:category ::a/conflict
@@ -299,7 +298,7 @@ By default caught anomalies will be filled with default `:category`, `:message` 
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/conflict, :message "Divide by zero", :data #error {...}
 ```
 
-Need to assign some category for certain class of exceptions? That's also possible with `with-exception-categories` macro:
+And finally we may need to assign some category for certain class of exceptions. That's also possible with `with-exception-categories` macro:
 ```clojure
 (at/with-exception-categories
   {NullPointerException ::a/unsupported}
