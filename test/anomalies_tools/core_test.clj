@@ -79,6 +79,12 @@
     (is (= (->> 1 anomaly (aware inc))
            (anomaly 1)))))
 
+(deftest rescue-test
+  (let [handle (rescue data)
+        anom (anomaly -1)]
+    (is (= (handle 1) 1))
+    (is (= (handle anom) -1))))
+
 (deftest caught-test
   (let [msg "Oops"
         anom (anomaly msg)]

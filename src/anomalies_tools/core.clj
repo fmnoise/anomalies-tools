@@ -40,7 +40,7 @@
   (s/valid? ::a/anomaly x))
 
 (defn anomaly
-  "Creates new anomally with given category(defaults to ::fault) message(optional) and data(optional)"
+  "Creates new anomaly with given category(defaults to ::fault) message(optional) and data(optional)"
   {:added "0.1.0"}
   ([] (anomaly *default-category* nil nil))
   ([cat-msg-data]
@@ -62,11 +62,18 @@
      (some? data) (assoc ::a/data data))))
 
 (defn aware
-  "Creates anomaly-aware wrapper for given function(1).
+  "Creates anomaly-aware wrapper for given 1-arity function.
   Wrapper calls function if no anomaly argument given and returns argument otherwise."
   {:added "0.1.0"}
   ([f] (fn [x] (if (anomaly? x) x (f x))))
   ([f v] ((aware f) v)))
+
+(defn rescue
+  "Creates anomaly-aware wrapper for given 1-arity function.
+  Wrapper calls function if anomaly argument given and returns argument otherwise."
+  {:added "0.1.3"}
+  ([f] (fn [x] (if (anomaly? x) (f x) x)))
+  ([f v] ((rescue f) v)))
 
 (defn either
   "If any of given arguments (min 2) is not anomaly, returns it,
@@ -82,7 +89,7 @@
 
 (defn chain
   "Creates anomaly-aware function call chain for given value.
-  If given value is anomally or any function in chain returns anomaly,
+  If given value is anomaly or any function in chain returns anomaly,
   it's returned immediately, rest of the chain is skipped"
   {:added "0.1.0"}
   [v & f]
@@ -92,7 +99,7 @@
 
 (defn caught
   "Creates anomaly-centric function call chain for given value.
-  If given value is not anomally, it's returned immediately and chain is skipped.
+  If given value is not anomaly, it's returned immediately and chain is skipped.
   If some function in chain returns anomaly, then new anomaly comes to next function in chain,
   otherwise initial anomaly is passed to next function"
   {:added "0.1.0"}

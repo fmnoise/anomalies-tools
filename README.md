@@ -116,19 +116,35 @@ How about functional programming?
 (inc (!!)) ;; BOOOM!!! Unhandled java.lang.ClassCastException clojure.lang.PersistentArrayMap cannot be cast to java.lang.Number
 ```
 
-How to make function aware of anomalies? `aware` to the rescue:
+How to make function aware of anomalies? `aware` and `rescue` to the help!
+`aware` makes function wrapper which will call given function with non-anomaly argument and return given argment otherwise:
 ```clojure
 (def ainc (at/aware inc))
 (ainc 1) ;; => 2
 (ainc (!!)) ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
 ```
+`rescue` is dedicated to produce value from given anomaly returning given argument otherwise:
 
-`aware` accepts function as first argument which makes it perfect for `->>` macro
+```clojure
+(defn handle [anom] (-> anom at/category name))
+
+(at/rescue handle 1) ;; => 1
+(at/rescue handle (!!)) ;; => "fault"
+```
+
+Both `aware` and `rescue` accept function as first argument which makes it perfect for `->>` macro
 ```clojure
 (->> 1 (at/aware inc) (at/aware str))
 ;; => "2"
+
 (->> (!!) (at/aware inc) (at/aware str))
 ;; => #:cognitect.anomalies{:category :cognitect.anomalies/fault}
+
+(->> (!! "Oops")
+     (at/aware inc)
+     (at/aware str)
+     (at/rescue (comp clojure.string/upper-case ::a/message)))
+;; => "OOPS"
 ```
 
 Do you like `some->` and `some->>` power for dealing with `nil` values? There's analogs for anomalies:
