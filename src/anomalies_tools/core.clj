@@ -121,23 +121,24 @@
   :except - set of exceptions which will be thrown(other exceptions will be turned into anomalies)
   :only and :except are mutually exclusive"
   {:added "0.1.0"}
-  [{:keys [category message data only except]} & body]
-  {:pre [(or (nil? category) (valid-category? category))
-         (or (nil? message) (string? message))
-         (or (nil? only) (set? only))
-         (or (nil? except) (set? except))
-         (or (empty? only) (empty? except))]}
-  `(try
-     (do ~@body)
-     (catch Throwable t#
-       (let [klass# (.getClass t#)
-             category# (or ~category (get *exception-categories* klass# *default-category*))
-             msg# (or ~message (.getMessage t#))
-             data# (or ~data t#)]
-         (if (and (nil? (get ~except klass#))
-                  (or (empty? ~only) (some? (get ~only klass#))))
-           (anomaly category# msg# data#)
-           (throw t#))))))
+  [options & body]
+  `(let [~'{:keys [category message data only except]} ~options]
+     (assert (or (nil? ~'category) (valid-category? ~'category)) "Invalid category")
+     (assert (or (nil? ~'message) (string? ~'message)) "Invalid message")
+     (assert (or (nil? ~'only) (set? ~'only)) "Selected exceptions should in a set")
+     (assert (or (nil? ~'except) (set? ~'except)) "Ignored exceptions should in a set")
+     (assert (or (empty? ~'only) (empty? ~'except)) "Either selected or ignored exceptions should be present")
+     (try
+      (do ~@body)
+      (catch Throwable t#
+        (let [klass# (.getClass t#)
+              category# (or ~'category (get *exception-categories* klass# *default-category*))
+              msg# (or ~'message (.getMessage t#))
+              data# (or ~'data t#)]
+          (if (and (nil? (get ~'except klass#))
+                   (or (empty? ~'only) (some? (get ~'only klass#))))
+            (anomaly category# msg# data#)
+            (throw t#)))))))
 
 (defmacro catch-only
   "Turns exceptions of given classes set into anomalies, other exceptions are thrown"
