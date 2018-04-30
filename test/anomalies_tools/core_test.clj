@@ -147,31 +147,35 @@
     (is (= (category anom) *default-category*))
     (is (= (-> anom data class) ArithmeticException)))
 
-  (let [anom (catch-anomaly
-              {:category ::a/conflict
-               :message "Oops"
-               :data (atom 1)}
+  (let [opts {:category ::a/conflict
+              :message "Oops"
+              :data (atom 1)}
+        anom (catch-anomaly
+              opts
               (/ 1 0))]
-    (is (= (message anom) "Oops"))
-    (is (= (category anom) ::a/conflict))
-    (is (= (-> anom data deref) 1)))
+    (is (= (message anom) (:message opts)))
+    (is (= (category anom) (:category opts)))
+    (is (= (-> anom data deref) (-> opts :data deref))))
 
-  (let [anom (catch-anomaly
-              {:category ::a/conflict}
+  (let [opts {:category ::a/conflict}
+        anom (catch-anomaly
+              opts
               (/ 1 0))]
     (is (= (message anom) "Divide by zero"))
-    (is (= (category anom) ::a/conflict))
+    (is (= (category anom) (:category opts)))
     (is (= (-> anom data class) ArithmeticException)))
 
-  (let [anom (catch-anomaly
-              {:only #{ArithmeticException}}
+  (let [opts {:only #{ArithmeticException}}
+        anom (catch-anomaly
+              opts
               (/ 1 0))]
     (is (= (message anom) "Divide by zero"))
     (is (= (category anom) *default-category*))
     (is (= (-> anom data class) ArithmeticException)))
 
-  (let [anom (catch-anomaly
-              {:except #{NullPointerException}}
+  (let [opts {:except #{NullPointerException}}
+        anom (catch-anomaly
+              opts
               (/ 1 0))]
     (is (= (message anom) "Divide by zero"))
     (is (= (category anom) *default-category*))
