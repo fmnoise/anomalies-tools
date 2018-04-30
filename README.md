@@ -126,10 +126,20 @@ How to make function aware of anomalies? `aware` and `rescue` to the help!
 `rescue` is dedicated to produce value from given anomaly returning given argument otherwise:
 
 ```clojure
-(defn handle [anom] (-> anom at/category name))
+;; turning anomaly into http response
+(def category->status
+  {::a/forbidden 403
+   ::a/not-found 404
+   ::a/conflict  409
+   ::a/busy      429
+   ::a/fault     500})
+
+(defn handle [anom]
+  {:status (-> anom ::a/category category->status)
+   :body (::a/message anom)}))
 
 (at/rescue handle 1) ;; => 1
-(at/rescue handle (!!)) ;; => "fault"
+(at/rescue handle (!! "Something went wrong")) ;; => {:status 500 :body "Something went wrong"}
 ```
 
 Both `aware` and `rescue` accept function as first argument which makes it perfect for `->>` macro
