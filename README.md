@@ -136,7 +136,7 @@ How to make function aware of anomalies? `aware` and `rescue` to the help!
 
 (defn handle [anom]
   {:status (-> anom ::a/category category->status)
-   :body (::a/message anom)}))
+   :body (::a/message anom)})
 
 (at/rescue handle 1) ;; => 1
 (at/rescue handle (!! "Something went wrong")) ;; => {:status 500 :body "Something went wrong"}
