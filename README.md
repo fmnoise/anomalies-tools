@@ -8,7 +8,7 @@ Library is currenty in alpha, so anything may be changed in future versions.
 
 Leiningen dependency information:
 ```
-[dawcs/anomalies-tools "0.1.2"]
+[dawcs/anomalies-tools "0.1.3"]
 ```
 
 Maven dependency information:

@@ -1,4 +1,4 @@
-(defproject dawcs/anomalies-tools "0.1.2"
+(defproject dawcs/anomalies-tools "0.1.3"
   :description "Anomalies handling tools"
   :url "http://github.com/dawcs/anomalies-tools"
   :license {:name "Apache License, Version 2.0"
