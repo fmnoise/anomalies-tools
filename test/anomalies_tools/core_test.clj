@@ -119,15 +119,14 @@
          (anomaly [1 2 3]))))
 
 (deftest alet-test
-  (is (= (alet [a 1 b 2] (+ a b)) ;; => 3
-         3))
+  (is (= (alet [a 1 b 2] (+ a b)) 3))
   (is (= (alet [a 1
-                  b (anomaly)
-                   _ (throw (Exception.))]
+                b (anomaly)
+                _ (throw (Exception.))]
            (+ a b))
          (anomaly)))
   (is (= (alet [a 1
-                  b (anomaly)]
+                b (anomaly)]
            (throw (Exception.)))
          (anomaly))))
 
