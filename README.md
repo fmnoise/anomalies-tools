@@ -16,7 +16,7 @@ Maven dependency information:
 <dependency>
   <groupId>dawcs</groupId>
   <artifactId>anomalies-tools</artifactId>
-  <version>0.1.2</version>
+  <version>0.1.3</version>
 </dependency>
 ```
 
