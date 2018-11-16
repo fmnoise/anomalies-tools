@@ -4,6 +4,10 @@ Utility functions and macros for https://github.com/cognitect-labs/anomalies
 
 Library is currenty in alpha, so anything may be changed in future versions.
 
+## Status
+
+This library is not under active development and author recommends to consider https://github.com/dawcs/flow if you're looking for errors handling solution.
+
 ## Usage
 
 Leiningen dependency information:
